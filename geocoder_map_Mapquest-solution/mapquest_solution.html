@@ -1,0 +1,84 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-gb" lang="en-gb">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <title>Demo</title>
+  
+  <script type="text/javascript" src="libraries/jquery-1.7.1.min.js"></script>
+  <script type="text/javascript" src="libraries/ol.js"></script>
+  <script type="text/javascript" src="js/map.js"></script>
+  
+  <link rel="stylesheet" href="style.css" type="text/css" />
+  
+  </head>
+  
+  <body onload="init();">
+    <div class="pagewrapper">
+      <div id="header"></div>
+      <div id="map"></div>
+      <div id="controls">
+        <h1>Controls</h1>
+        <div ng-app = "geocoder" ng-controller = "geocodingController">
+           Enter address: <input type = "text" ng-model = "location.address"><button class="btn btn-default" ng-click="location.geocode()">Geocode</button>
+  		 <p>This address was geocoded to {{location.lat}}/{{location.lon}}</p>
+        </div>
+      </div>
+    </div>
+	<script src = "https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+	<script src = "http://ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js"></script>
+    
+	<script>
+       var mainApp = angular.module("geocoder", []);
+       
+       mainApp.controller('geocodingController', function($scope) {
+          $scope.location = {
+				address: "Padova",
+             	lat: 0.00,
+				lon: 0.00,
+			geocode: function() {
+                $.ajax({
+				  url: 'http://www.mapquestapi.com/geocoding/v1/address?key=xIUXsioMg2DK2XcyA1gUVoAqkaA26IVe&outFormat=json&location=' + $scope.location.address,
+				  method: 'GET',
+				  beforeSend: function() {
+					  $scope.location.lat = 0;
+					  $scope.location.lon = 0;
+				  },
+				  success: function(response) {
+					  $scope.location.lat = response.results[0].locations[0].latLng.lat;
+					  $scope.location.lon = response.results[0].locations[0].latLng.lng;
+					  $scope.$apply();
+					  $scope.location.addPointToMap(response);
+				  },
+				  error: function(error) {
+				  
+				  }
+                });
+             },
+			 addPointToMap: function(jsonData) {
+				 var geocodedPt = [];
+				 geocodedPt["lat"] = $scope.location.lat;
+				 geocodedPt["lon"] = $scope.location.lon;
+				 
+				 wkt = new ol.format.WKT();		
+				 
+				 var viewportPoint = "POINT(" 
+					+ geocodedPt["lon"] + " " + geocodedPt["lat"] 
+					+ ")";
+				 
+				 var viewportPointGeometry = wkt.readFeature(viewportPoint,{
+        			 	dataProjection: 'EPSG:4326',
+        			 	featureProjection: 'EPSG:3857'
+      		   	 });
+				 
+				 featureLayer.clear();
+				 featureLayer.addFeature(viewportPointGeometry);
+				 
+				 map.getView().setCenter(ol.proj.transform([geocodedPt["lon"], geocodedPt["lat"]], 'EPSG:4326', 'EPSG:3857'));
+				 map.getView().setZoom(15);
+			 }
+          };
+       });
+	   
+    </script>
+  </body>
+</html>
